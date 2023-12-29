@@ -1,0 +1,217 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Provider {
+  id          String            @id @default(uuid())
+  name        String
+  createdAt   DateTime          @default(now())
+  managers    ProviderManager[]
+  restaurants Restaurant[]
+}
+
+model ProviderManager {
+  id         String   @id @default(uuid())
+  name       String
+  username   String   @unique
+  password   String
+  providerId String
+  createdAt  DateTime @default(now())
+  provider   Provider @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
+}
+
+model Restaurant {
+  id         String              @id @default(uuid())
+  name       String
+  providerId String
+  createdAt  DateTime            @default(now())
+  bannerUrl  String?
+  expiresAt  DateTime
+  maxTables  Int
+  categories Category[]
+  products   Product[]
+  provider   Provider            @relation(fields: [providerId], references: [id])
+  managers   RestaurantManager[]
+  tables     Table[]
+  waiters    Waiter[]
+
+  @@index([providerId])
+}
+
+model RestaurantManager {
+  id           String     @id @default(uuid())
+  name         String
+  username     String     @unique
+  password     String
+  restaurantId String
+  createdAt    DateTime   @default(now())
+  isOwner      Boolean    @default(false)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([restaurantId])
+  @@index([restaurantId, isOwner])
+}
+
+model Waiter {
+  id           String     @id @default(uuid())
+  onesignal_id String?        @default("")
+  name         String
+  username     String     @unique
+  password     String
+  restaurantId String
+  tables       Table[]
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([restaurantId])
+}
+
+model Session {
+  userId    String
+  role      SessionRole
+  token     String      @unique
+  updatedAt DateTime    @updatedAt
+}
+
+model Customer {
+  id                  String             @id @default(uuid())
+  onesignal_id        String?            @default("")
+  name                String
+  username            String             @unique
+  password            String
+  email               String?
+  createdAt           DateTime           @default(now())
+  tableParticipations TableParticipant[]
+  cart                String[]
+}
+
+model Category {
+  id           String     @id @default(uuid())
+  restaurantId String
+  name         String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  products     Product[]
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId])
+}
+
+model Product {
+  id                        String                  @id @default(uuid())
+  restaurantId              String
+  categoryId                String
+  imageUrl                  String?
+  name                      String
+  priceInCents              Int
+  availableAmount           Int                     @default(0)
+  estimatedMinutesToPrepare Int?
+  description               String
+  availabilityType          ProductAvailabilityType @default(QUANTITY)
+  isAvailable               Boolean                 @default(true)
+  orderProduct              OrderProduct[]
+  category                  Category                @relation(fields: [categoryId], references: [id])
+  restaurant                Restaurant              @relation(fields: [restaurantId], references: [id])
+
+  @@index([restaurantId])
+  @@index([restaurantId, categoryId])
+}
+
+model Table {
+  id            String         @id @default(uuid())
+  number        Int
+  restaurantId  String
+  waiterId      String?
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id])
+  waiter        Waiter?        @relation(fields: [waiterId], references: [id])
+  tableSessions TableSession[]
+
+  @@unique([restaurantId, number])
+  @@index([restaurantId])
+}
+
+model TableSession {
+  id                 String             @id @default(uuid())
+  tableId            String
+  password           String
+  status             TableSessionStatus
+  openedAt           DateTime           @default(now())
+  requestedPaymentAt DateTime?
+  finishedAt         DateTime?
+  categories         String[]
+  orders             Order[]
+  tableParticipants  TableParticipant[]
+  table              Table              @relation(fields: [tableId], references: [id])
+
+  @@index([tableId])
+}
+
+model TableParticipant {
+  id             String       @id @default(uuid())
+  tableSessionId String
+  customerId     String
+  isLeader       Boolean
+  joinedAt       DateTime     @default(now())
+  orders         Order[]
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  tableSession   TableSession @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, tableSessionId])
+}
+
+model Order {
+  id                 String           @id @default(uuid())
+  tableSessionId     String
+  tableParticipantId String
+  requestedAt        DateTime         @default(now())
+  tableParticipant   TableParticipant @relation(fields: [tableParticipantId], references: [id])
+  tableSession       TableSession     @relation(fields: [tableSessionId], references: [id])
+  products           OrderProduct[]
+}
+
+model OrderProduct {
+  productId    String
+  orderId      String
+  status       OrderProductStatus
+  name         String
+  imageUrl     String?
+  amount       Int
+  priceInCents Int
+  servedAt     DateTime?
+  canceledAt   DateTime?
+  description  String
+  order        Order              @relation(fields: [orderId], references: [id])
+  product      Product            @relation(fields: [productId], references: [id])
+
+  @@id([productId, orderId])
+}
+
+enum SessionRole {
+  PROVIDER_MANAGER
+  RESTAURANT_MANAGER
+  WAITER
+  CUSTOMER
+}
+
+enum ProductAvailabilityType {
+  QUANTITY
+  AVAILABILITY
+}
+
+enum TableSessionStatus {
+  OPENED
+  REQUESTED_PAYMENT
+  FINISHED
+}
+
+enum OrderProductStatus {
+  REQUESTED
+  SERVED
+  CANCELED
+}

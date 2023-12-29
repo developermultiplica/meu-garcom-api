@@ -1,0 +1,47 @@
+version: '3.7'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  api:
+    container_name: meu-garcom-api
+    image: node:18-alpine
+    entrypoint: yarn prepare-dev
+    depends_on:
+      postgresql:
+        condition: service_started
+      localstack:
+        condition: service_healthy
+    ports:
+      - '3333:3333'
+      - '5555:5555'
+    volumes:
+      - ./:/srv/app
+    working_dir: /srv/app
+    networks:
+      - app-tier
+    stdin_open: true
+
+  postgresql:
+    image: 'bitnami/postgresql:latest'
+    container_name: meu-garcom-postgresql
+    ports:
+      - "5432:5432"
+    networks:
+      - app-tier
+    environment:
+      - POSTGRESQL_PASSWORD=docker
+      - POSTGRESQL_USERNAME=docker
+      - POSTGRESQL_DATABASE=meu-garcom
+
+  localstack:
+    image: localstack/localstack
+    container_name: meu-garcom-localstack
+    networks:
+      - app-tier
+    environment:
+      - SERVICES=s3
+    ports:
+      - "4566:4566"

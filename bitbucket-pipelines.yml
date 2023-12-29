@@ -1,0 +1,22 @@
+#  Template NodeJS build
+
+#  This template allows you to validate your NodeJS code.
+#  The workflow allows running tests and code linting on the default branch.
+
+image: node:18
+
+pipelines:
+  default:
+    - parallel:
+        - step:
+            name: Typescript check
+            script:
+              - cp .env.local .env
+              - yarn
+              - yarn run tsc-check
+        - step:
+            name: Code linting
+            script:
+              - cp .env.local .env
+              - yarn
+              - yarn eslint .
