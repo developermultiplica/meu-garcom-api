@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: CI - meu-garcom-api
 
 on:
   push:
@@ -7,12 +7,26 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::478950612646:role/ecr-developermultiplica
+        aws-region: sa-east-1
+    
+    - name: Login to ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push image
+      run: |
+        docker build -t 478950612646.dkr.ecr.sa-east-1.amazonaws.com/meu-garcom:${{github.sha}} .
+        docker push 478950612646.dkr.ecr.sa-east-1.amazonaws.com/meu-garcom:${{github.sha}}
