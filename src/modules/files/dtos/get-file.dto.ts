@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 
@@ -14,4 +15,9 @@ export class GetFileDto {
 
   @IsString()
   key: string;
+}
+
+export class UploadFileDto {
+  @ApiProperty({ type: 'string', format: 'binary', required: false })
+  file: string
 }
