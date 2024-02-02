@@ -46,7 +46,7 @@ export class UpdateRestaurantManagerProvider extends RestaurantManagerUseCase<Re
 
     if (!requesterRestaurantManager.isOwner) {
       throw new BadRequestException(
-        'Apenas o usuário dono do estabelecimento pode remover colaboradores',
+        'Apenas o usuário dono do estabelecimento pode editar colaboradores',
       );
     }
 

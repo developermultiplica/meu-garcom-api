@@ -1,5 +1,4 @@
 /* eslint-disable prettier/prettier */
-
 import {
   BadRequestException,
   Body,
@@ -18,6 +17,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { RateLimit, RateLimiterGuard } from 'nestjs-rate-limiter';
 
+import { PrismaService } from '~/infra/prisma/prisma.service';
 import { SocketIoGateway } from '~/infra/web-socket/socket-io.gateway';
 import { ROLE } from '~/modules/auth/constants/role';
 import { UnauthorizedException } from '~/modules/auth/errors/UnauthorizedException';
@@ -37,9 +37,7 @@ import { GetTableSessionById } from '../use-cases/get-table-session-by-id.use-ca
 import { JoinTableSession } from '../use-cases/join-table-session.use-case';
 import { RequestTableSessionOrder } from '../use-cases/request-table-session-order.use-case';
 import { RequestTableSessionPayment } from '../use-cases/request-table-session-payment.use-case';
-import { TableSessionViewPossibleNull } from '../views/table-session-possible-null.view';
 import { TableSessionView } from '../views/table-session.view';
-
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 @ApiTags('table-session')
@@ -47,6 +45,7 @@ import { TableSessionView } from '../views/table-session.view';
 export class TableSessionController {
   constructor(
     private socket: SocketIoGateway,
+    private prisma: PrismaService,
     private createTableSession: CreateTableSession,
     private getTableSessionById: GetTableSessionById,
     private requestTableSessionOrder: RequestTableSessionOrder,
@@ -64,16 +63,37 @@ export class TableSessionController {
   @Get(':tableSessionId')
   async getById(
     @Param() { tableSessionId }: GetTableSessionByIdDto,
-  ): Promise<TableSessionViewPossibleNull> {
+  ): Promise<any> {
     const tableSession = await this.getTableSessionById.handle({
       id: tableSessionId,
     });
 
-    return {
+    const res: any = {
       tableSession: tableSession
         ? TableSessionMapper.toHTTP(tableSession)
         : null,
     };
+
+    const bills: any = res.tableSession?.bill || [];
+    if (bills.length < 0) {
+      return res;
+    }
+
+    for (const prod of bills) {
+      const product = await this.prisma.product.findUnique({
+        where: {
+          id: prod.productId,
+        },
+      });
+      prod.estimatedMinutesToPrepare = product?.estimatedMinutesToPrepare;
+    }
+
+    if (res && res.tableSession) {
+      delete res.tableSession.bill;
+    }
+
+    res.tableSession.bill = bills;
+    return res;
   }
 
   @ApiOperation({

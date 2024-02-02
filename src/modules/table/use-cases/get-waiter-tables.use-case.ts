@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '~/infra/prisma/prisma.service';
@@ -35,6 +36,9 @@ export class GetWaiterTables extends TableUseCase<Request, Response> {
         waiterId,
       },
       include: this.tableInclude,
+      orderBy: {
+        number: 'asc',
+      },
     });
 
     const mappedTables = waiterTables.map<TableWithIncludes>((table) => {

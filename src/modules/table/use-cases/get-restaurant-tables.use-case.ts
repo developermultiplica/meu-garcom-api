@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '~/infra/prisma/prisma.service';
@@ -48,6 +49,9 @@ export class GetRestaurantTables extends TableUseCase<Request, Response> {
         restaurantId: restaurant.id,
       },
       include: this.tableInclude,
+      orderBy: {
+        number: 'asc',
+      },
     });
 
     const mappedTables = restaurantTables.map<TableWithIncludes>((table) => {
