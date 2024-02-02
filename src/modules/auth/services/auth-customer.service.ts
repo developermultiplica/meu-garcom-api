@@ -4,7 +4,6 @@ import { JwtService } from '@nestjs/jwt';
 import ShortUniqueId from 'short-unique-id';
 
 import { PasswordEncryptionsService } from '~/infra/encryption/password-encryption.service';
-import { MailTemplates } from '~/infra/mail/enums/templates';
 import { MailService } from '~/infra/mail/mail.service';
 import { PrismaService } from '~/infra/prisma/prisma.service';
 import { SmsService } from '~/infra/sms/sms.service';
@@ -91,7 +90,6 @@ export class AuthCustomerService {
         await this.mailService.sendEmail({
           to: customer.email!,
           subject: 'Recuperação de senha',
-          template: MailTemplates.RECOVER_PASSWORD,
           context: {
             name: customer.name,
             password,
@@ -101,21 +99,5 @@ export class AuthCustomerService {
 
       return;
     }
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.customer.update({
-        where: {
-          username,
-        },
-        data: {
-          password: await this.passwordEncryption.encrypt(password),
-        },
-      });
-
-      await this.smsService.sendSms({
-        to: `+55${customer.username}`,
-        message: `Meu Garçom: Olá ${customer.name}, segue a nova senha para acesso: ${password}`,
-      });
-    });
   }
 }

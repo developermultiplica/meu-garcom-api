@@ -5,7 +5,6 @@ import { isPast } from 'date-fns';
 import ShortUniqueId from 'short-unique-id';
 
 import { PasswordEncryptionsService } from '~/infra/encryption/password-encryption.service';
-import { MailTemplates } from '~/infra/mail/enums/templates';
 import { MailService } from '~/infra/mail/mail.service';
 import { PrismaService } from '~/infra/prisma/prisma.service';
 import { InactiveRestaurantException } from '~/modules/restaurant/errors/inactive-restaurant-exception';
@@ -94,7 +93,6 @@ export class AuthRestaurantService {
       await this.mailService.sendEmail({
         to: restaurantManager.username,
         subject: 'Recuperação de senha',
-        template: MailTemplates.RECOVER_PASSWORD,
         context: {
           name: restaurantManager.name,
           password,

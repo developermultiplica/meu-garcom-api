@@ -4,7 +4,6 @@ import { JwtService } from '@nestjs/jwt';
 import ShortUniqueId from 'short-unique-id';
 
 import { PasswordEncryptionsService } from '~/infra/encryption/password-encryption.service';
-import { MailTemplates } from '~/infra/mail/enums/templates';
 import { MailService } from '~/infra/mail/mail.service';
 import { PrismaService } from '~/infra/prisma/prisma.service';
 import { WaiterService } from '~/modules/waiter/waiter.service';
@@ -81,9 +80,8 @@ export class AuthWaiterService {
       });
 
       await this.mailService.sendEmail({
-        to: waiter.username,
+        to: waiter.username!,
         subject: 'Recuperação de senha',
-        template: MailTemplates.RECOVER_PASSWORD,
         context: {
           name: waiter.name,
           password,
